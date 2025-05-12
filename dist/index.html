@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Угадай фильм по кадру</title>
+  <link rel="stylesheet" crossorigin href="/assets/index-CCkTMz3u.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Угадай фильм по кадру</h1>
+    <div id="players">
+      <span id="player1">Игрок 1: <span id="score1">0</span></span>
+      <span id="player2">Игрок 2: <span id="score2">0</span></span>
+    </div>
+    <div id="game">
+      <img id="frame" src="" alt="Кадр из фильма" />
+      <p id="timer">Осталось времени: 15 секунд</p>
+      <div class="game-grid">
+        <div class="player-section player-section-1">
+          <h3>Игрок 1</h3>
+          <div id="options1"></div>
+          <div id="answer1" class="player-answer"></div>
+        </div>
+        <div class="player-section player-section-2">
+          <h3>Игрок 2</h3>
+          <div id="options2"></div>
+          <div id="answer2" class="player-answer"></div>
+        </div>
+      </div>
+      <p id="feedback"></p>
+      <button id="nextBtn" style="display:none;">Следующий</button>
+    </div>
+    <div id="result" style="display:none;">
+      <h2>Игра окончена!</h2>
+      <p id="score"></p>
+      <button onclick="location.reload()">Играть снова</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
