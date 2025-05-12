@@ -11,6 +11,9 @@ let player2Correct = false;
 let firstCorrectPlayer = null;
 let timeLeft = 15;
 let timerInterval;
+let ws;
+let playerId;
+let roomId;
 
 const frame = document.getElementById("frame");
 const feedback = document.getElementById("feedback");
@@ -27,6 +30,62 @@ const optionsDiv1 = document.getElementById("options1");
 const optionsDiv2 = document.getElementById("options2");
 const answerDiv1 = document.getElementById("answer1");
 const answerDiv2 = document.getElementById("answer2");
+
+function connectWebSocket() {
+  ws = new WebSocket('ws://' + window.location.hostname + ':3000');
+
+  ws.onopen = () => {
+    roomId = new URLSearchParams(window.location.search).get('room') || Math.random().toString(36).substring(7);
+    if (!window.location.search) {
+      window.history.pushState({}, '', `?room=${roomId}`);
+    }
+    ws.send(JSON.stringify({ type: 'join', roomId }));
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    switch (data.type) {
+      case 'joined':
+        playerId = data.playerId;
+        if (playerId === 1) {
+          document.querySelector('.player-section-2').style.opacity = '0.5';
+        } else {
+          document.querySelector('.player-section-1').style.opacity = '0.5';
+        }
+        break;
+
+      case 'start':
+        loadQuizData();
+        break;
+
+      case 'playerChoice':
+        handleRemotePlayerChoice(data.playerId, data.choice);
+        break;
+
+      case 'playerLeft':
+        alert('Второй игрок покинул игру');
+        location.reload();
+        break;
+
+      case 'error':
+        alert(data.message);
+        break;
+    }
+  };
+
+  ws.onclose = () => {
+    alert('Соединение потеряно. Перезагрузите страницу.');
+  };
+}
+
+function handleRemotePlayerChoice(remotePlayerId, choice) {
+  const btn = Array.from(remotePlayerId === 1 ? optionsDiv1 : optionsDiv2.children)
+    .find(b => b.textContent === choice);
+  if (btn) {
+    handlePlayerChoice(remotePlayerId, btn, choice);
+  }
+}
 
 async function loadQuizData() {
   try {
@@ -74,13 +133,23 @@ function loadQuestion() {
     const btn1 = document.createElement("button");
     btn1.textContent = option;
     btn1.className = "option-btn";
-    btn1.onclick = () => handlePlayerChoice(1, btn1, option);
+    btn1.onclick = () => {
+      if (playerId === 1) {
+        handlePlayerChoice(1, btn1, option);
+        ws.send(JSON.stringify({ type: 'choice', playerId: 1, choice: option }));
+      }
+    };
     optionsDiv1.appendChild(btn1);
 
     const btn2 = document.createElement("button");
     btn2.textContent = option;
     btn2.className = "option-btn";
-    btn2.onclick = () => handlePlayerChoice(2, btn2, option);
+    btn2.onclick = () => {
+      if (playerId === 2) {
+        handlePlayerChoice(2, btn2, option);
+        ws.send(JSON.stringify({ type: 'choice', playerId: 2, choice: option }));
+      }
+    };
     optionsDiv2.appendChild(btn2);
   });
 
@@ -88,6 +157,7 @@ function loadQuestion() {
   startTimer();
 }
 
+// Остальные функции остаются без изменений
 function handlePlayerChoice(player, btn, selected) {
   if ((player === 1 && player1Answered) || (player === 2 && player2Answered)) return;
 
@@ -120,7 +190,6 @@ function handlePlayerChoice(player, btn, selected) {
 function showRoundResult() {
   const correctAnswer = quizData[current].answer;
 
-  // Подсветка ответов
   [optionsDiv1, optionsDiv2].forEach((div, index) => {
     Array.from(div.children).forEach(btn => {
       if (btn.textContent === correctAnswer) {
@@ -134,7 +203,6 @@ function showRoundResult() {
     });
   });
 
-  // Начисление очков
   let msg = "";
   if (player1Correct && player2Correct) {
     if (firstCorrectPlayer === 1) {
@@ -213,4 +281,4 @@ document.querySelector("#result button").addEventListener("click", () => {
   loadQuizData();
 });
 
-loadQuizData();
+connectWebSocket();
